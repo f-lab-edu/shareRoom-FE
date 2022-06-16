@@ -1,3 +1,5 @@
+type StoreElement = HTMLElement | typeof window;
+
 export interface Dispatch {
   type: string;
   payload?: unknown;
@@ -9,6 +11,11 @@ interface PublishPayload<T> {
   store: T;
 }
 
+interface DispatchOption {
+  bubbles?: boolean
+  dispatchElement?: StoreElement
+}
+
 function createStore<T, P extends Dispatch>(
   name: string,
   callback: (store: T, action: P) => T,
@@ -17,15 +24,13 @@ function createStore<T, P extends Dispatch>(
   let currentStore: T;
   const reducer = callback;
   const dispatchEventName = `${name}-dispatch`;
-  const listenerElement = targetElement || window;
+  const storeElement: StoreElement = targetElement || window;
 
-  // listener Element를 정할 수 있다는 장점이 있지만... 그것 뿐인 것 같다.
-  // 원본처럼 subscribe로 바꾸는 편이 좋을 것 같다.
-  listenerElement.addEventListener(dispatchEventName, (e: CustomEventInit<P>) => {
+  storeElement.addEventListener(dispatchEventName, (e: CustomEventInit<P> & Event) => {
+    e.stopPropagation();
     currentStore = reducer(currentStore, e.detail!);
 
     // FIXME: publish를 listen하는 곳에서 어떤 결과가 올지를 type으로 알려줄 수가 없다는 것이 단점이다. -> event interface 확장을 통해 가능할 것...
-    // FIXME: listener가 달린 DOM 객체가 아니면 listening을 할 수 없어, 불편하다...
     const publish = new CustomEvent<PublishPayload<T>>(name, {
       detail: {
         type: e.detail!.type,
@@ -33,17 +38,21 @@ function createStore<T, P extends Dispatch>(
         store: currentStore,
       },
     });
-    dispatchEvent(publish);
+    storeElement.dispatchEvent(publish);
   });
 
-  function dispatch({ type, payload }: P) {
+  function dispatch(
+    { type, payload }: P,
+    { bubbles = false, dispatchElement = storeElement }: DispatchOption,
+  ) {
     const dispatch = new CustomEvent(dispatchEventName, {
       detail: {
         type,
         payload,
       },
+      bubbles,
     });
-    dispatchEvent(dispatch);
+    dispatchElement.dispatchEvent(dispatch);
   }
 
   const getStore = () => {
