@@ -30,7 +30,6 @@ function createStore<T, P extends Dispatch>(
     e.stopPropagation();
     currentStore = reducer(currentStore, e.detail!);
 
-    // FIXME: publish를 listen하는 곳에서 어떤 결과가 올지를 type으로 알려줄 수가 없다는 것이 단점이다. -> event interface 확장을 통해 가능할 것...
     const publish = new CustomEvent<PublishPayload<T>>(name, {
       detail: {
         type: e.detail!.type,
