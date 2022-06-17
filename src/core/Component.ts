@@ -1,13 +1,13 @@
 import { nanoid } from 'nanoid';
 
-// TODO: 사용자가 만든 Component도 포함되어야 한다. (document.createElement('name'))으로 가능, prop 넣어주는 것은 별도로
 export interface Template {
   parent: Element | Node;
   children?: (Template | Element | Node | DocumentFragment)[];
 }
 
-abstract class Component extends HTMLElement {
+abstract class Component<T extends { [key: string]: any }> extends HTMLElement {
   private componentId = nanoid();
+  private state?: T;
 
   constructor() {
     super();
@@ -18,10 +18,10 @@ abstract class Component extends HTMLElement {
     this.componentDidMounted();
   }
   private disconnectedCallback() {
-    this.componentDidUpdated();
+    this.componentDidUnMounted();
   }
   private attributeChangedCallback() {
-    this.componentDidUnMounted();
+    this.componentDidUpdated();
   }
 
   protected componentDidMounted: () => void = () => {
@@ -38,14 +38,35 @@ abstract class Component extends HTMLElement {
     return this.componentId;
   }
 
+  // prop과 state를 따로 안두고 하나로
+  public setState = (newState: T) => {
+    // state가 몇개가 갱신되더라도 한번만 갱신되도록 하고 싶다.
+    // state안에 몇개의 state가 있을 테지만, 각 property가 갱신 될 때마다, render되게 하는 건 가혹하다. = proxy는 쓸 수 없다.
+
+    // re-render 트리거는 shallow equal
+    const isReRender = Object.entries(newState).some(([key, val]) => (
+      (this.state ? this.state[key] : undefined) !== val
+    ));
+
+    if (isReRender) {
+      this.state = {
+        ...this.state,
+        ...newState,
+      };
+
+      this.render();
+      this.componentDidUpdated();
+    }
+
+    return this;
+  };
+
   protected addEventListenerToWindow = (eventName: string, callback: (e: CustomEvent) => void) => {
     window.addEventListener(eventName, callback.bind(this) as EventListener);
   };
 
   // 각 컴포넌트의 렌더링이 어떻게 될지는 알아서
   // 사용자 자유! 이 안에 렌더할 것을 넣어주세요!
-  // TODO: 사용자의 Component일 경우엔 props 함수를 실행시켜 적용된 prop을 넣어주도록 하거나, props라는 객체 property를 가져 그걸 갱신하도록
-  // 갱신 trigger는 각 prop의 refernce가 변하면 새로 그림 (shallow equal)
   protected abstract template: () => Template;
 
   private composeComponents = (newTemplates: Template): Element | Node => {
