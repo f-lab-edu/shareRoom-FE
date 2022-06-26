@@ -1,21 +1,7 @@
 {
-  "name": "shareroom-fe",
-  "version": "0.0.1",
-  "description": "room sharing SPA service of Front-end, made with Vanilla TypeScript",
-  "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/f-lab-edu/shareRoom-FE.git"
-  },
-  "keywords": [
-    "room",
-    "airbnb",
-    "typescript",
-    "vanilla",
-    "typescript",
-    "f-lab",
-    "share",
-    "front-end"
+  "private": true,
+  "workspaces": [
+    "packages/*"
   ],
   "author": "Woo KyungJun",
   "license": "ISC",
@@ -24,11 +10,15 @@
   },
   "homepage": "https://github.com/f-lab-edu/shareRoom-FE#readme",
   "scripts": {
-    "dev": "vite --open",
-    "build": "vite build --base=./"
+    "main:dev": "yarn workspace shareroom-fe dev"
   },
+  "dependencies": {
+    "lerna": "^5.1.6",
+    "nx": "^14.3.6"
+  },
+  "name": "shareRoom-FE",
   "devDependencies": {
-    "typescript": "^4.7.3",
-    "vite": "^2.9.10"
+    "nx": "14.3.6",
+    "@nrwl/nx-cloud": "latest"
   }
 }
